@@ -32,7 +32,7 @@ if uploaded_file_cielo is not None and uploaded_file_sistema is not None:
     df_cielo['Data da venda'] = df_cielo['Data da venda'].dt.strftime('%d/%m/%Y')
     
     # Renomear a coluna 'Valor bruto' no sistema para preservar as duas versões no resultado
-    df_sistema.rename(columns={'Valor bruto': 'Valor bruto sistema'}, inplace=True)
+    df_sistema.rename(columns={'VALOR BRUTO': 'Valor bruto sistema'}, inplace=True)
     
     # Ordenar os DataFrames por 'Valor bruto' para manter a consistência na comparação
     df_sistema.sort_values('Valor bruto sistema', ascending=True, inplace=True)
