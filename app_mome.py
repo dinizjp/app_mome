@@ -24,11 +24,11 @@ if uploaded_file_cielo is not None and uploaded_file_sistema is not None:
     df_sistema.columns = df_sistema.columns.str.strip()
     
     # Converter as colunas de data para o tipo datetime
-    df_sistema['data'] = pd.to_datetime(df_sistema['data'], dayfirst=True)
+    df_sistema['DATA DE FATURAMENTO'] = pd.to_datetime(df_sistema['DATA DE FATURAMENTO'], dayfirst=True)
     df_cielo['Data da venda'] = pd.to_datetime(df_cielo['Data da venda'], dayfirst=True)
     
     # Formatar a data para string (dd/mm/yyyy) para garantir a consistência
-    df_sistema['data'] = df_sistema['data'].dt.strftime('%d/%m/%Y')
+    df_sistema['DATA DE FATURAMENTO'] = df_sistema['DATA DE FATURAMENTO'].dt.strftime('%d/%m/%Y')
     df_cielo['Data da venda'] = df_cielo['Data da venda'].dt.strftime('%d/%m/%Y')
     
     # Renomear a coluna 'Valor bruto' no sistema para preservar as duas versões no resultado
@@ -52,7 +52,7 @@ if uploaded_file_cielo is not None and uploaded_file_sistema is not None:
     for i, row_cielo in df_cielo.iterrows():
         # Encontrar a primeira correspondência no Sistema que ainda não foi utilizada
         correspondencia = df_sistema[
-            (df_sistema['data'] == row_cielo['Data da venda']) &
+            (df_sistema['DATA DE FATURAMENTO'] == row_cielo['Data da venda']) &
             (df_sistema['Valor bruto sistema'] == row_cielo['Valor bruto']) &
             (~df_sistema.index.isin(indices_utilizados))
         ].head(1)
