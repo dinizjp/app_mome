@@ -69,7 +69,7 @@ if uploaded_file_cielo is not None and uploaded_file_sistema is not None:
     final_result = pd.DataFrame([{
         **row_cielo.to_dict(),
         **row_sistema.to_dict(),
-        'Diferença': f"=E{idx+2}-M{idx+2}" if not row_sistema.empty else f"=E{idx+2}"
+        'Diferença': f"=E{idx+2}-O{idx+2}" if not row_sistema.empty else f"=E{idx+2}"
     } for idx, (row_cielo, row_sistema) in enumerate(resultados)])
     
     # Converter o DataFrame final em um objeto BytesIO
