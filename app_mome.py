@@ -17,7 +17,8 @@ if uploaded_file_cielo is not None and uploaded_file_sistema is not None:
     df_sistema = pd.read_excel(uploaded_file_sistema)
     
     # Selecione apenas as colunas desejadas
-    colunas_desejadas = ['Data da venda', 'Hora da venda', 'Estabelecimento', 'Forma de pagamento', 'Valor bruto', 'NSU/DOC', 'Bandeira']
+    colunas_desejadas = ['Data da venda', 'Hora da venda', 'Estabelecimento', 'Forma de pagamento',
+                         'Valor bruto', 'NSU/DOC', 'Bandeira']
     df_cielo = df_cielo[colunas_desejadas]
     
     # Renomear colunas no df_sistema para corresponder ao df_cielo
@@ -31,7 +32,7 @@ if uploaded_file_cielo is not None and uploaded_file_sistema is not None:
     df_sistema['DATA DE FATURAMENTO'] = df_sistema['DATA DE FATURAMENTO'].dt.strftime('%d/%m/%Y')
     df_cielo['Data da venda'] = df_cielo['Data da venda'].dt.strftime('%d/%m/%Y')
     
-    # Renomear a coluna 'Valor bruto' no sistema para preservar as duas versões no resultado
+    # Renomear a coluna 'VALOR BRUTO' no sistema para preservar as duas versões no resultado
     df_sistema.rename(columns={'VALOR BRUTO': 'Valor bruto sistema'}, inplace=True)
     
     # Ordenar os DataFrames por 'Valor bruto' para manter a consistência na comparação
@@ -42,8 +43,9 @@ if uploaded_file_cielo is not None and uploaded_file_sistema is not None:
     df_sistema = df_sistema.reset_index(drop=True)
     df_cielo = df_cielo.reset_index(drop=True)
     
-    # Criar uma lista para armazenar os índices já utilizados no df_sistema para evitar duplicatas
-    indices_utilizados = []
+    # Criar listas para armazenar os índices já utilizados nas duas planilhas
+    indices_utilizados_cielo = []
+    indices_utilizados_sistema = []
     
     # Criar uma lista para armazenar os resultados
     resultados = []
@@ -54,29 +56,61 @@ if uploaded_file_cielo is not None and uploaded_file_sistema is not None:
         correspondencia = df_sistema[
             (df_sistema['DATA DE FATURAMENTO'] == row_cielo['Data da venda']) &
             (df_sistema['Valor bruto sistema'] == row_cielo['Valor bruto']) &
-            (~df_sistema.index.isin(indices_utilizados))
+            (~df_sistema.index.isin(indices_utilizados_sistema))
         ].head(1)
         
         # Se uma correspondência for encontrada, armazená-la
         if not correspondencia.empty:
             resultados.append((row_cielo, correspondencia.iloc[0]))
-            indices_utilizados.append(correspondencia.index[0])
+            indices_utilizados_sistema.append(correspondencia.index[0])
+            indices_utilizados_cielo.append(i)
         else:
             # Caso não haja correspondência, apenas adicione os dados da Cielo
             resultados.append((row_cielo, pd.Series()))
+            indices_utilizados_cielo.append(i)
+    
+    # Adicionar as linhas da planilha do Sistema que não foram correspondidas
+    for j, row_sistema in df_sistema.iterrows():
+        if j not in indices_utilizados_sistema:
+            # Adicionar o row_sistema com um row_cielo vazio
+            resultados.append((pd.Series(), row_sistema))
+            indices_utilizados_sistema.append(j)
     
     # Criar DataFrame final, mantendo todas as colunas das duas planilhas
     final_result = pd.DataFrame([{
         **row_cielo.to_dict(),
-        **row_sistema.to_dict(),
-        'Diferença': f"=E{idx+2}-O{idx+2}" if not row_sistema.empty else f"=E{idx+2}"
-    } for idx, (row_cielo, row_sistema) in enumerate(resultados)])
+        **row_sistema.to_dict()
+    } for row_cielo, row_sistema in resultados])
+    
+    # Substituir NaN por vazio para melhor visualização
+    final_result.fillna('', inplace=True)
+    
+    # Reordenar as colunas para melhor visualização (opcional)
+    # Você pode ajustar a ordem das colunas conforme necessário
+    cols = list(final_result.columns)
+    final_result = final_result[cols]
     
     # Converter o DataFrame final em um objeto BytesIO
     output = BytesIO()
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-        final_result.to_excel(writer, index=False)
-        # writer.save()  # Removido porque o gerenciador de contexto já salva e fecha o arquivo
+        final_result.to_excel(writer, index=False, sheet_name='Resultado')
+        workbook = writer.book
+        worksheet = writer.sheets['Resultado']
+        
+        # Encontrar as posições das colunas 'Valor bruto' e 'Valor bruto sistema'
+        valor_bruto_col = final_result.columns.get_loc('Valor bruto')
+        valor_bruto_sistema_col = final_result.columns.get_loc('Valor bruto sistema')
+        diferenca_col = len(final_result.columns)  # A coluna 'Diferença' será adicionada após a última coluna
+        
+        # Escrever a coluna 'Diferença' com a fórmula
+        for row_num in range(1, len(final_result) + 1):
+            cell_formula = f"=IF(ISBLANK(${chr(65 + valor_bruto_sistema_col)}{row_num + 1})," \
+                           f"${chr(65 + valor_bruto_col)}{row_num + 1}," \
+                           f"${chr(65 + valor_bruto_col)}{row_num + 1}-${chr(65 + valor_bruto_sistema_col)}{row_num + 1})"
+            worksheet.write_formula(row_num, diferenca_col, cell_formula)
+        
+        # Adicionar o cabeçalho da coluna 'Diferença'
+        worksheet.write(0, diferenca_col, 'Diferença')
     
     # Obter o conteúdo do BytesIO
     processed_data = output.getvalue()
