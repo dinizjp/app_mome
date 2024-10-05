@@ -8,8 +8,10 @@ st.write('Carregar planilha da Cielo')
 # Upload da planilha da Cielo
 uploaded_file_cielo = st.file_uploader('Faça o upload do arquivo aqui', type=['xlsx'], key='cielo')
 
+
+st.write('Carregar planilha da Sistema')
 # Upload da planilha do Sistema
-uploaded_file_sistema = st.file_uploader('Carregar planilha do Sistema', type=['xlsx'], key='sistema')
+uploaded_file_sistema = st.file_uploader('Faça o upload do arquivo aqui', type=['xlsx'], key='sistema')
 
 # Verifica se ambos os arquivos foram carregados
 if uploaded_file_cielo is not None and uploaded_file_sistema is not None:
