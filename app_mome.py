@@ -8,7 +8,6 @@ st.write('Carregar planilha da Cielo')
 # Upload da planilha da Cielo
 uploaded_file_cielo = st.file_uploader('Faça o upload do arquivo aqui', type=['xlsx'], key='cielo')
 
-st.divader()
 
 st.write('Carregar planilha da Sistema')
 # Upload da planilha do Sistema
