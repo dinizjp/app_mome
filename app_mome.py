@@ -2,10 +2,11 @@ import streamlit as st
 import pandas as pd
 from io import BytesIO
 
-st.title('')
 
+
+st.write('Carregar planilha da Cielo')
 # Upload da planilha da Cielo
-uploaded_file_cielo = st.file_uploader('Carregar planilha da Cielo', type=['xlsx'], key='cielo')
+uploaded_file_cielo = st.file_uploader( type=['xlsx'], key='cielo')
 
 # Upload da planilha do Sistema
 uploaded_file_sistema = st.file_uploader('Carregar planilha do Sistema', type=['xlsx'], key='sistema')
