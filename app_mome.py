@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 from io import BytesIO
 
-st.title('Comparação de Planilhas Cielo e Sistema')
+st.title('')
 
 # Upload da planilha da Cielo
 uploaded_file_cielo = st.file_uploader('Carregar planilha da Cielo', type=['xlsx'], key='cielo')
