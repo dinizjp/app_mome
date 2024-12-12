@@ -55,6 +55,11 @@ if uploaded_file_cielo is not None and uploaded_file_sistema is not None:
         '2894031291': 'ESTREITO',
         '2895310933': 'ARAGUAÍNA I',
         '2896720299': 'ARAGUAÍNA II',
+        '2871227700': 'GUARAÍ',
+        '2888776450':'COLINAS', 
+        '2891499632':'CANAÃ DOS CARAJÁS',
+        '2808601667': 'COLINAS',
+        '2893481730':'COLINAS'
         # Adicione todos os códigos necessários
     }
 
