@@ -33,9 +33,11 @@ if uploaded_file_sicredi is not None and uploaded_file_sistema is not None:
     df_sicredi.columns = df_sicredi.columns.str.strip()
     df_sistema.columns = df_sistema.columns.str.strip()
 
+  
     # Selecionar colunas desejadas
-    colunas_desejadas_sicredi = ['Data da venda', 'Valor bruto', 'Número do estabelecimento']
-    colunas_desejadas_sistema = ['DATA DE FATURAMENTO', 'VALOR BRUTO', 'EMPRESA']
+    colunas_desejadas_sicredi = ['Data da venda', 'Produto', 'Bandeira', 'Valor bruto', 'Número do estabelecimento']
+    colunas_desejadas_sistema = ['ID EMPRESA', 'EMPRESA', 'ID VENDA', 'FORMA DE PAGAMENTO', 'NOME', 
+                                 'ID CAIXA', 'NSU', 'VALOR BRUTO', 'DATA DE FATURAMENTO', 'EMISSAO']
 
     # Verificar se todas as colunas existem
     for col in colunas_desejadas_sicredi:
@@ -48,6 +50,7 @@ if uploaded_file_sicredi is not None and uploaded_file_sistema is not None:
             st.error(f"A coluna '{col}' não foi encontrada na planilha do Sistema.")
             st.stop()
 
+    # Selecionar apenas as colunas desejadas
     df_sicredi = df_sicredi[colunas_desejadas_sicredi]
     df_sistema = df_sistema[colunas_desejadas_sistema]
 
@@ -85,7 +88,7 @@ if uploaded_file_sicredi is not None and uploaded_file_sistema is not None:
     try:
         df_sicredi['Data da venda'] = pd.to_datetime(df_sicredi['Data da venda'], dayfirst=True)
     except Exception as e:
-        st.error(f"Erro ao converter 'Data de venda' para datetime: {e}")
+        st.error(f"Erro ao converter 'Data da venda' para datetime: {e}")
         st.stop()
 
     try:
