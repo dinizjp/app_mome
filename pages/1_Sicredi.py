@@ -15,7 +15,7 @@ uploaded_file_sistema = st.file_uploader('Faça o upload do arquivo do Sistema a
 # Verifica se ambos os arquivos foram carregados
 if uploaded_file_sicredi is not None and uploaded_file_sistema is not None:
     # Leitura das planilhas
-    df_sicredi = pd.read_excel(uploaded_file_sicredi, skiprows=15)
+    df_sicredi = pd.read_excel(uploaded_file_sicredi, skiprows=14)
     df_sistema = pd.read_excel(uploaded_file_sistema)
 
     # Remover espaços extras dos nomes das colunas
