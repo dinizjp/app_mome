@@ -102,7 +102,7 @@ if uploaded_file_sicredi is not None and uploaded_file_sistema is not None:
         st.stop()
 
     # Formatar a data para string (dd/mm/yyyy) para garantir a consistência
-    df_sicredi['Data de venda'] = df_sicredi['Data de venda'].dt.strftime('%d/%m/%Y')
+    df_sicredi['Data da venda'] = df_sicredi['Data de venda'].dt.strftime('%d/%m/%Y')
     df_sistema['DATA DE FATURAMENTO'] = df_sistema['DATA DE FATURAMENTO'].dt.strftime('%d/%m/%Y')
 
     # Converter as colunas de valor para float
