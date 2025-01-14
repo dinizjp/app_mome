@@ -33,13 +33,6 @@ if uploaded_file_sicredi is not None and uploaded_file_sistema is not None:
     df_sicredi.columns = df_sicredi.columns.str.strip()
     df_sistema.columns = df_sistema.columns.str.strip()
 
-    # Exibir as colunas para verificação
-    st.write('### Colunas da planilha Sicredi:')
-    st.write(df_sicredi.columns.tolist())
-
-    st.write('### Colunas da planilha do Sistema:')
-    st.write(df_sistema.columns.tolist())
-
     # Selecionar colunas desejadas
     colunas_desejadas_sicredi = ['Data da venda', 'Valor bruto', 'Número do estabelecimento']
     colunas_desejadas_sistema = ['DATA DE FATURAMENTO', 'VALOR BRUTO', 'EMPRESA']
