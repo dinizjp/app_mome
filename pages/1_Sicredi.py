@@ -41,7 +41,7 @@ if uploaded_file_sicredi is not None and uploaded_file_sistema is not None:
     st.write(df_sistema.columns.tolist())
 
     # Selecionar colunas desejadas
-    colunas_desejadas_sicredi = ['Data de venda', 'Valor bruto', 'Número do estabelecimento']
+    colunas_desejadas_sicredi = ['Data da venda', 'Valor bruto', 'Número do estabelecimento']
     colunas_desejadas_sistema = ['DATA DE FATURAMENTO', 'VALOR BRUTO', 'EMPRESA']
 
     # Verificar se todas as colunas existem
@@ -90,7 +90,7 @@ if uploaded_file_sicredi is not None and uploaded_file_sistema is not None:
 
     # Converter as colunas de data para o tipo datetime
     try:
-        df_sicredi['Data de venda'] = pd.to_datetime(df_sicredi['Data de venda'], dayfirst=True)
+        df_sicredi['Data da venda'] = pd.to_datetime(df_sicredi['Data da venda'], dayfirst=True)
     except Exception as e:
         st.error(f"Erro ao converter 'Data de venda' para datetime: {e}")
         st.stop()
@@ -102,7 +102,7 @@ if uploaded_file_sicredi is not None and uploaded_file_sistema is not None:
         st.stop()
 
     # Formatar a data para string (dd/mm/yyyy) para garantir a consistência
-    df_sicredi['Data da venda'] = df_sicredi['Data de venda'].dt.strftime('%d/%m/%Y')
+    df_sicredi['Data da venda'] = df_sicredi['Data da venda'].dt.strftime('%d/%m/%Y')
     df_sistema['DATA DE FATURAMENTO'] = df_sistema['DATA DE FATURAMENTO'].dt.strftime('%d/%m/%Y')
 
     # Converter as colunas de valor para float
@@ -138,7 +138,7 @@ if uploaded_file_sicredi is not None and uploaded_file_sistema is not None:
         # Encontrar a primeira correspondência no Sistema que ainda não foi utilizada
         correspondencia = df_sistema[
             (df_sistema['EMPRESA'] == row_sicredi['Número do estabelecimento']) &
-            (df_sistema['DATA DE FATURAMENTO'] == row_sicredi['Data de venda']) &
+            (df_sistema['DATA DE FATURAMENTO'] == row_sicredi['Data da venda']) &
             (df_sistema['Valor bruto sistema'] == row_sicredi['Valor bruto sicredi']) &
             (~df_sistema.index.isin(indices_utilizados_sistema))
         ].head(1)
