@@ -14,19 +14,48 @@ uploaded_file_sistema = st.file_uploader('Faça o upload do arquivo do Sistema a
 
 # Verifica se ambos os arquivos foram carregados
 if uploaded_file_sicredi is not None and uploaded_file_sistema is not None:
-    # Leitura das planilhas
-    df_sicredi = pd.read_excel(uploaded_file_sicredi, skiprows=14)
-    df_sistema = pd.read_excel(uploaded_file_sistema)
+    # Leitura das planilhas com tratamento de erros
+    try:
+        df_sicredi = pd.read_excel(uploaded_file_sicredi, skiprows=14)
+        st.success("Planilha Sicredi carregada com sucesso!")
+    except Exception as e:
+        st.error(f"Erro ao ler o arquivo Sicredi: {e}")
+        st.stop()
+
+    try:
+        df_sistema = pd.read_excel(uploaded_file_sistema)
+        st.success("Planilha do Sistema carregada com sucesso!")
+    except Exception as e:
+        st.error(f"Erro ao ler o arquivo do Sistema: {e}")
+        st.stop()
 
     # Remover espaços extras dos nomes das colunas
     df_sicredi.columns = df_sicredi.columns.str.strip()
     df_sistema.columns = df_sistema.columns.str.strip()
 
+    # Exibir as colunas para verificação
+    st.write('### Colunas da planilha Sicredi:')
+    st.write(df_sicredi.columns.tolist())
+
+    st.write('### Colunas da planilha do Sistema:')
+    st.write(df_sistema.columns.tolist())
+
     # Selecionar colunas desejadas
     colunas_desejadas_sicredi = ['Data de venda', 'Valor bruto', 'Número do estabelecimento']
-    df_sicredi = df_sicredi[colunas_desejadas_sicredi]
-
     colunas_desejadas_sistema = ['DATA DE FATURAMENTO', 'VALOR BRUTO', 'EMPRESA']
+
+    # Verificar se todas as colunas existem
+    for col in colunas_desejadas_sicredi:
+        if col not in df_sicredi.columns:
+            st.error(f"A coluna '{col}' não foi encontrada na planilha Sicredi.")
+            st.stop()
+
+    for col in colunas_desejadas_sistema:
+        if col not in df_sistema.columns:
+            st.error(f"A coluna '{col}' não foi encontrada na planilha do Sistema.")
+            st.stop()
+
+    df_sicredi = df_sicredi[colunas_desejadas_sicredi]
     df_sistema = df_sistema[colunas_desejadas_sistema]
 
     # Definir o mapeamento dos códigos para os nomes (apenas na coluna 'Número do estabelecimento' da Sicredi)
@@ -60,16 +89,34 @@ if uploaded_file_sicredi is not None and uploaded_file_sistema is not None:
     df_sistema['EMPRESA'] = df_sistema['EMPRESA'].apply(normalize_name)
 
     # Converter as colunas de data para o tipo datetime
-    df_sicredi['Data de venda'] = pd.to_datetime(df_sicredi['Data de venda'], dayfirst=True)
-    df_sistema['DATA DE FATURAMENTO'] = pd.to_datetime(df_sistema['DATA DE FATURAMENTO'], dayfirst=True)
+    try:
+        df_sicredi['Data de venda'] = pd.to_datetime(df_sicredi['Data de venda'], dayfirst=True)
+    except Exception as e:
+        st.error(f"Erro ao converter 'Data de venda' para datetime: {e}")
+        st.stop()
+
+    try:
+        df_sistema['DATA DE FATURAMENTO'] = pd.to_datetime(df_sistema['DATA DE FATURAMENTO'], dayfirst=True)
+    except Exception as e:
+        st.error(f"Erro ao converter 'DATA DE FATURAMENTO' para datetime: {e}")
+        st.stop()
 
     # Formatar a data para string (dd/mm/yyyy) para garantir a consistência
     df_sicredi['Data de venda'] = df_sicredi['Data de venda'].dt.strftime('%d/%m/%Y')
     df_sistema['DATA DE FATURAMENTO'] = df_sistema['DATA DE FATURAMENTO'].dt.strftime('%d/%m/%Y')
 
     # Converter as colunas de valor para float
-    df_sicredi['Valor bruto sicredi'] = df_sicredi['Valor bruto'].astype(float)
-    df_sistema['Valor bruto sistema'] = df_sistema['VALOR BRUTO'].astype(float)
+    try:
+        df_sicredi['Valor bruto sicredi'] = df_sicredi['Valor bruto'].astype(float)
+    except Exception as e:
+        st.error(f"Erro ao converter 'Valor bruto' da Sicredi para float: {e}")
+        st.stop()
+
+    try:
+        df_sistema['Valor bruto sistema'] = df_sistema['VALOR BRUTO'].astype(float)
+    except Exception as e:
+        st.error(f"Erro ao converter 'VALOR BRUTO' do Sistema para float: {e}")
+        st.stop()
 
     # Remover colunas originais de valor bruto para evitar confusão
     df_sicredi.drop(columns=['Valor bruto'], inplace=True)
@@ -132,43 +179,47 @@ if uploaded_file_sicredi is not None and uploaded_file_sistema is not None:
 
     # Converter o DataFrame final em um objeto BytesIO
     output = BytesIO()
-    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-        final_result.to_excel(writer, index=False, sheet_name='Resultado')
-        workbook = writer.book
-        worksheet = writer.sheets['Resultado']
+    try:
+        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+            final_result.to_excel(writer, index=False, sheet_name='Resultado')
+            workbook = writer.book
+            worksheet = writer.sheets['Resultado']
 
-        # Obter o número de linhas e colunas
-        max_row = len(final_result) + 1  # +1 porque o Excel é 1-indexado (linha de cabeçalho)
-        max_col = len(final_result.columns)
+            # Obter o número de linhas e colunas
+            max_row = len(final_result) + 1  # +1 porque o Excel é 1-indexado (linha de cabeçalho)
+            max_col = len(final_result.columns)
 
-        # Encontrar as posições das colunas
-        col_names = final_result.columns.tolist()
-        col_valor_bruto_sicredi = col_names.index('Valor bruto sicredi')
-        col_valor_bruto_sistema = col_names.index('Valor bruto sistema')
-        col_diferenca = col_names.index('Diferença')
+            # Encontrar as posições das colunas
+            col_names = final_result.columns.tolist()
+            col_valor_bruto_sicredi = col_names.index('Valor bruto sicredi')
+            col_valor_bruto_sistema = col_names.index('Valor bruto sistema')
+            col_diferenca = col_names.index('Diferença')
 
-        # Converter índices de coluna para letras de Excel
-        def col_idx_to_excel_col(idx):
-            """Converte índice de coluna (zero-based) para letra da coluna no Excel"""
-            idx += 1  # Ajuste para 1-based indexing do Excel
-            col_str = ''
-            while idx > 0:
-                idx, remainder = divmod(idx - 1, 26)
-                col_str = chr(65 + remainder) + col_str
-            return col_str
+            # Converter índices de coluna para letras de Excel
+            def col_idx_to_excel_col(idx):
+                """Converte índice de coluna (zero-based) para letra da coluna no Excel"""
+                idx += 1  # Ajuste para 1-based indexing do Excel
+                col_str = ''
+                while idx > 0:
+                    idx, remainder = divmod(idx - 1, 26)
+                    col_str = chr(65 + remainder) + col_str
+                return col_str
 
-        col_letter_sicredi = col_idx_to_excel_col(col_valor_bruto_sicredi)
-        col_letter_sistema = col_idx_to_excel_col(col_valor_bruto_sistema)
-        col_letter_diferenca = col_idx_to_excel_col(col_diferenca)
+            col_letter_sicredi = col_idx_to_excel_col(col_valor_bruto_sicredi)
+            col_letter_sistema = col_idx_to_excel_col(col_valor_bruto_sistema)
+            col_letter_diferenca = col_idx_to_excel_col(col_diferenca)
 
-        # Escrever fórmulas na coluna 'Diferença'
-        for row_num in range(2, max_row + 1):  # Começando da linha 2 (após o cabeçalho)
-            formula = f"={col_letter_sicredi}{row_num}-{col_letter_sistema}{row_num}"
-            worksheet.write_formula(f"{col_letter_diferenca}{row_num}", formula)
+            # Escrever fórmulas na coluna 'Diferença'
+            for row_num in range(2, max_row + 1):  # Começando da linha 2 (após o cabeçalho)
+                formula = f"={col_letter_sicredi}{row_num}-{col_letter_sistema}{row_num}"
+                worksheet.write_formula(f"{col_letter_diferenca}{row_num}", formula)
 
-        # Formatar a coluna 'Diferença' como número com duas casas decimais
-        number_format = workbook.add_format({'num_format': '#,##0.00'})
-        worksheet.set_column(col_diferenca, col_diferenca, 15, number_format)
+            # Formatar a coluna 'Diferença' como número com duas casas decimais
+            number_format = workbook.add_format({'num_format': '#,##0.00'})
+            worksheet.set_column(col_diferenca, col_diferenca, 15, number_format)
+    except Exception as e:
+        st.error(f"Erro ao gerar o arquivo Excel consolidado: {e}")
+        st.stop()
 
     processed_data = output.getvalue()
 
