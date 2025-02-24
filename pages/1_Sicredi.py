@@ -57,6 +57,7 @@ if uploaded_file_sicredi is not None and uploaded_file_sistema is not None:
     # Definir o mapeamento dos códigos para os nomes (apenas na coluna 'Número do estabelecimento' da Sicredi)
     establishment_mapping = {
         '92139112': 'ARAGUAÍNA IV'
+        '92187441': 'BAlSAS I'
         # Adicione outros códigos se necessário
     }
 
