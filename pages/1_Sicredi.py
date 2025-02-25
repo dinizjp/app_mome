@@ -56,9 +56,20 @@ if uploaded_file_sicredi is not None and uploaded_file_sistema is not None:
 
     # Definir o mapeamento dos códigos para os nomes (apenas na coluna 'Número do estabelecimento' da Sicredi)
     establishment_mapping = {
-        '92139112': 'ARAGUAÍNA IV'
-        '92187441': 'BAlSAS I'
-        # Adicione outros códigos se necessário
+        "92185778": "Araguaína I",
+        "92185790": "Araguaína II",
+        "92185788": "Araguaína III",
+        "92139112": "Araguaína IV",
+        "92187397": "Imperatriz I",
+        "92187444": "Imperatriz II",
+        "92187446": "Imperatriz III",
+        "92187441": "Balsas I",
+        "92187436": "Balsas II",
+        "92197344": "Estreito",
+        "92185785": "Gurupi",
+        "92197340": "Formosa",
+        "92187423": "Guaraí",
+        "92187439": "Colinas"
     }
 
     # Mapear os códigos na coluna 'Número do estabelecimento' da planilha da Sicredi
