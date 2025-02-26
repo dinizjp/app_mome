@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 from io import BytesIO
+from datetime import timedelta  # Importado para calcular D+1
 
 st.write('Carregar planilha da Cielo')
 # Upload da planilha da Cielo
@@ -56,11 +57,10 @@ if uploaded_file_cielo is not None and uploaded_file_sistema is not None:
         '2895310933': 'ARAGUAÍNA I',
         '2896720299': 'ARAGUAÍNA II',
         '2871227700': 'GUARAÍ',
-        '2888776450':'COLINAS', 
-        '2891499632':'CANAÃ DOS CARAJÁS',
+        '2888776450': 'COLINAS',
+        '2891499632': 'CANAÃ DOS CARAJÁS',
         '2808601667': 'COLINAS',
-        '2893481730':'COLINAS'
-        # Adicione todos os códigos necessários
+        '2893481730': 'COLINAS'
     }
 
     # Mapear os códigos na coluna 'Estabelecimento' da planilha da Cielo
@@ -116,7 +116,7 @@ if uploaded_file_cielo is not None and uploaded_file_sistema is not None:
 
     # Loop sobre cada linha da planilha da Cielo
     for i, row_cielo in df_cielo.iterrows():
-        # Encontrar a primeira correspondência no Sistema que ainda não foi utilizada
+        # Primeira tentativa: correspondência na data exata
         correspondencia = df_sistema[
             (df_sistema['EMPRESA'] == row_cielo['Estabelecimento']) &
             (df_sistema['DATA DE FATURAMENTO'] == row_cielo['Data da venda']) &
@@ -124,15 +124,30 @@ if uploaded_file_cielo is not None and uploaded_file_sistema is not None:
             (~df_sistema.index.isin(indices_utilizados_sistema))
         ].head(1)
 
-        # Se uma correspondência for encontrada, armazená-la
+        # Se uma correspondência for encontrada na data exata
         if not correspondencia.empty:
-            resultados.append((row_cielo, correspondencia.iloc[0], 'Correspondido'))
+            resultados.append((row_cielo, correspondencia.iloc[0], 'Correspondido (Data Exata)'))
             indices_utilizados_sistema.append(correspondencia.index[0])
             indices_utilizados_cielo.append(i)
         else:
-            # Caso não haja correspondência, apenas adicione os dados da Cielo
-            resultados.append((row_cielo, pd.Series(), 'Não Correspondido'))
-            indices_utilizados_cielo.append(i)
+            # Segunda tentativa: correspondência em D+1
+            data_d1 = (pd.to_datetime(row_cielo['Data da venda'], format='%d/%m/%Y') + timedelta(days=1)).strftime('%d/%m/%Y')
+            correspondencia_d1 = df_sistema[
+                (df_sistema['EMPRESA'] == row_cielo['Estabelecimento']) &
+                (df_sistema['DATA DE FATURAMENTO'] == data_d1) &
+                (df_sistema['Valor bruto sistema'] == row_cielo['Valor bruto cielo']) &
+                (~df_sistema.index.isin(indices_utilizados_sistema))
+            ].head(1)
+
+            # Se uma correspondência for encontrada em D+1
+            if not correspondencia_d1.empty:
+                resultados.append((row_cielo, correspondencia_d1.iloc[0], 'Correspondido (D+1)'))
+                indices_utilizados_sistema.append(correspondencia_d1.index[0])
+                indices_utilizados_cielo.append(i)
+            else:
+                # Caso não haja correspondência
+                resultados.append((row_cielo, pd.Series(), 'Não Correspondido'))
+                indices_utilizados_cielo.append(i)
 
     # Adicionar as linhas da planilha do Sistema que não foram correspondidas
     for j, row_sistema in df_sistema.iterrows():
@@ -151,7 +166,7 @@ if uploaded_file_cielo is not None and uploaded_file_sistema is not None:
     # Substituir NaN por vazio para melhor visualização
     final_result.fillna('', inplace=True)
 
-    # **Adicionar a coluna 'Diferença' vazia ao DataFrame**
+    # Adicionar a coluna 'Diferença' vazia ao DataFrame
     final_result['Diferença'] = ''
 
     # Garantir que as colunas 'Diferença' e 'Status' sejam as últimas
