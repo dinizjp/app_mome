@@ -67,7 +67,7 @@ if uploaded_file_sicredi is not None and uploaded_file_sistema is not None:
         "92187436": "Balsas II",
         "92197344": "Estreito",
         "92185785": "Gurupi I",
-        "92197340": "Formosa",
+        "92197340": "Formosa I",
         "92187423": "Guaraí",
         "92187439": "Colinas"
     }
