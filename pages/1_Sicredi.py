@@ -9,20 +9,34 @@ st.write('### Carregar planilha da Sicredi')
 # Upload da planilha da Sicredi
 uploaded_file_sicredi = st.file_uploader('Faça o upload do arquivo Sicredi aqui', type=['xlsx'], key='sicredi')
 
-st.write('### Carregar planilha do Sistema')
+# st.write('### Carregar planilha do Sistema')
 # Upload da planilha do Sistema
 uploaded_file_sistema = st.file_uploader('Faça o upload do arquivo do Sistema aqui', type=['xlsx'], key='sistema_sicredi')
 
 # Verifica se ambos os arquivos foram carregados
 if uploaded_file_sicredi is not None and uploaded_file_sistema is not None:
-    # Leitura das planilhas com tratamento de erros
+    # Definir explicitamente os nomes das colunas da Sicredi com base no documento fornecido
+    colunas_sicredi = [
+        'Data da venda', 'Cód. de autorização', 'Produto', 'Parcelas', 'Bandeira', 
+        'Canal', 'Valor bruto', 'Valor da taxa', 'Valor líquido', 'Valor cancelado', 
+        'Status', 'Número do terminal', 'Comprovante da venda', 'Cód. do pedido', 
+        'Número do estabelecimento', 'Nome do estabelecimento', 'Descrição do link', 
+        'Número do cartão', 'Cód. Ref. Cartão'
+    ]
+
+    # Leitura da planilha Sicredi
     try:
-        df_sicredi = pd.read_excel(uploaded_file_sicredi, skiprows=16)
+        # Ler o arquivo pulando as linhas iniciais até encontrar a linha de cabeçalho
+        df_sicredi = pd.read_excel(uploaded_file_sicredi, skiprows=17, names=colunas_sicredi, header=None)
         st.success("Planilha Sicredi carregada com sucesso!")
+        
+        # Exibir os nomes das colunas lidas para depuração
+        st.write("Colunas lidas da planilha Sicredi:", df_sicredi.columns.tolist())
     except Exception as e:
         st.error(f"Erro ao ler o arquivo Sicredi: {e}")
         st.stop()
 
+    # Leitura da planilha do Sistema
     try:
         df_sistema = pd.read_excel(uploaded_file_sistema)
         st.success("Planilha do Sistema carregada com sucesso!")
