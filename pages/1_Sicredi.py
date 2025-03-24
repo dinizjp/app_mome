@@ -17,7 +17,7 @@ uploaded_file_sistema = st.file_uploader('Faça o upload do arquivo do Sistema a
 if uploaded_file_sicredi is not None and uploaded_file_sistema is not None:
     # Leitura das planilhas com tratamento de erros
     try:
-        df_sicredi = pd.read_excel(uploaded_file_sicredi, skiprows=16)
+        df_sicredi = pd.read_excel(uploaded_file_sicredi, skiprows=15)
         st.success("Planilha Sicredi carregada com sucesso!")
     except Exception as e:
         st.error(f"Erro ao ler o arquivo Sicredi: {e}")
