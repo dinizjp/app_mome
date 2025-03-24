@@ -9,7 +9,7 @@ st.write('### Carregar planilha da Sicredi')
 # Upload da planilha da Sicredi
 uploaded_file_sicredi = st.file_uploader('Faça o upload do arquivo Sicredi aqui', type=['xlsx'], key='sicredi')
 
-# st.write('### Carregar planilha do Sistema')
+st.write('### Carregar planilha do Sistema')
 # Upload da planilha do Sistema
 uploaded_file_sistema = st.file_uploader('Faça o upload do arquivo do Sistema aqui', type=['xlsx'], key='sistema_sicredi')
 
@@ -31,7 +31,7 @@ if uploaded_file_sicredi is not None and uploaded_file_sistema is not None:
         st.success("Planilha Sicredi carregada com sucesso!")
         
         # Exibir os nomes das colunas lidas para depuração
-        st.write("Colunas lidas da planilha Sicredi:", df_sicredi.columns.tolist())
+        st.write("Colunas lidas da planilha Sicredi:")
     except Exception as e:
         st.error(f"Erro ao ler o arquivo Sicredi: {e}")
         st.stop()
