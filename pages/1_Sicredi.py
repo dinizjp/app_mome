@@ -27,7 +27,7 @@ if uploaded_file_sicredi is not None and uploaded_file_sistema is not None:
     # Leitura da planilha Sicredi
     try:
         # Ler o arquivo pulando as linhas iniciais até encontrar a linha de cabeçalho
-        df_sicredi = pd.read_excel(uploaded_file_sicredi, skiprows=17, names=colunas_sicredi, header=None)
+        df_sicredi = pd.read_excel(uploaded_file_sicredi, skiprows=16, names=colunas_sicredi, header=None)
         st.success("Planilha Sicredi carregada com sucesso!")
         
         # Exibir os nomes das colunas lidas para depuração
