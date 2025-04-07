@@ -1,0 +1,16 @@
+id_empresa_mapping = {
+    58: 'Araguaína II',
+    66: 'Balsas II',
+    55: 'Araguaína I',
+    53: 'Imperatriz II', 
+    51: 'Imperatriz I',
+    65: 'Araguaína IV', 
+    52: 'Imperatriz III',
+    57: 'Araguaína III',
+    50: 'Balsas I', 
+    56: 'Gurupi I',  
+    61: 'Colinas',
+    60: 'Estreito',
+    46: 'Formosa I',
+    59: 'Guaraí'
+}

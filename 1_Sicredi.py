@@ -1,21 +1,80 @@
 import streamlit as st
 import pandas as pd
-from io import BytesIO
-from datetime import timedelta  # Para calcular D+1
+import pyodbc
+import os
+import io
+from datetime import datetime, timedelta
+from utils import fetch_system_data, normalize_name, col_idx_to_excel_col
+
+st.set_page_config(page_title='Comparação de Vendas: Sicredi vs Sistema', layout='wide')
+
+# Recuperar as credenciais dos segredos (configuradas via secrets do Streamlit Cloud ou no arquivo .streamlit/secrets.toml)
+server   = st.secrets["mssql"]["server"]
+database = st.secrets["mssql"]["database"]
+username = st.secrets["mssql"]["username"]
+password = st.secrets["mssql"]["password"]
+
+if not all([server, database, username, password]):
+    st.error("Verifique se todas as variáveis estão definidas corretamente no secrets.")
+    st.stop()
+else:
+    st.write(f"Servidor: {server}")
+    st.write(f"Banco de Dados: {database}")
+    st.write(f"Usuário: {username}")
 
 st.title('Comparação de Vendas: Sicredi vs Sistema')
 
+#####################################
+# Seção 1: Carregar planilha da Sicredi
+#####################################
 st.write('### Carregar planilha da Sicredi')
-# Upload da planilha da Sicredi
 uploaded_file_sicredi = st.file_uploader('Faça o upload do arquivo Sicredi aqui', type=['xlsx'], key='sicredi')
 
-st.write('### Carregar planilha do Sistema')
-# Upload da planilha do Sistema
-uploaded_file_sistema = st.file_uploader('Faça o upload do arquivo do Sistema aqui', type=['xlsx'], key='sistema_sicredi')
+#####################################
+# Seção 2: Buscar dados do Sistema via SQL
+#####################################
+st.write('### Buscar dados do Sistema')
+st.write("Informe os filtros para consulta:")
 
-# Verifica se ambos os arquivos foram carregados
-if uploaded_file_sicredi is not None and uploaded_file_sistema is not None:
-    # Definir explicitamente os nomes das colunas da Sicredi com base no documento fornecido
+# Inputs de data
+start_date = st.date_input("Data Inicial", value=datetime.now())
+end_date = st.date_input("Data Final", value=datetime.now())
+
+# Mapeamento de empresas para o selectbox
+id_empresa_mapping = {
+    58: 'Araguaína II',
+    66: 'Balsas II',
+    55: 'Araguaína I',
+    53: 'Imperatriz II', 
+    51: 'Imperatriz I',
+    65: 'Araguaína IV', 
+    52: 'Imperatriz III',
+    57: 'Araguaína III',
+    50: 'Balsas I', 
+    56: 'Gurupi I',  
+    61: 'Colinas',
+    60: 'Estreito',
+    46: 'Formosa I',
+    59: 'Guaraí'
+}
+
+company_options = sorted(id_empresa_mapping.values())
+selected_company = st.selectbox("Selecione a empresa", options=company_options)
+
+# Botão para disparar a consulta do Sistema
+if st.button("Buscar dados do Sistema"):
+    try:
+        df_sistema = fetch_system_data(start_date, end_date, selected_company, id_empresa_mapping, st.secrets)
+        st.success("Dados do Sistema carregados com sucesso!")
+        st.session_state.df_sistema = df_sistema
+    except Exception as e:
+        st.error(str(e))
+
+#####################################
+# Seção 3: Processamento e Consolidação
+#####################################
+if uploaded_file_sicredi is not None and "df_sistema" in st.session_state:
+    # Leitura e tratamento da planilha Sicredi
     colunas_sicredi = [
         'Data da venda', 'Cód. de autorização', 'Produto', 'Parcelas', 'Bandeira', 
         'Canal', 'Valor bruto', 'Valor da taxa', 'Valor líquido', 'Valor cancelado', 
@@ -23,37 +82,27 @@ if uploaded_file_sicredi is not None and uploaded_file_sistema is not None:
         'Número do estabelecimento', 'Nome do estabelecimento', 'Descrição do link', 
         'Número do cartão', 'Cód. Ref. Cartão'
     ]
-
-    # Leitura da planilha Sicredi
+    
     try:
-        # Ler o arquivo pulando as linhas iniciais até encontrar a linha de cabeçalho
         df_sicredi = pd.read_excel(uploaded_file_sicredi, skiprows=16, names=colunas_sicredi, header=None)
         st.success("Planilha Sicredi carregada com sucesso!")
-        
-        # Exibir os nomes das colunas lidas para depuração
-        st.write("Colunas lidas da planilha Sicredi:")
+        #st.write("Colunas lidas da planilha Sicredi:", df_sicredi.columns.tolist())
     except Exception as e:
         st.error(f"Erro ao ler o arquivo Sicredi: {e}")
         st.stop()
 
-    # Leitura da planilha do Sistema
-    try:
-        df_sistema = pd.read_excel(uploaded_file_sistema)
-        st.success("Planilha do Sistema carregada com sucesso!")
-    except Exception as e:
-        st.error(f"Erro ao ler o arquivo do Sistema: {e}")
-        st.stop()
+    # Dados do Sistema obtidos na consulta SQL
+    df_sistema = st.session_state.df_sistema.copy()
 
-    # Remover espaços extras dos nomes das colunas
+    # Remove espaços extras dos nomes das colunas
     df_sicredi.columns = df_sicredi.columns.str.strip()
     df_sistema.columns = df_sistema.columns.str.strip()
 
-    # Selecionar colunas desejadas
+    # Seleção das colunas desejadas
     colunas_desejadas_sicredi = ['Data da venda', 'Produto', 'Bandeira', 'Valor bruto', 'Número do estabelecimento']
     colunas_desejadas_sistema = ['ID EMPRESA', 'EMPRESA', 'ID VENDA', 'FORMA DE PAGAMENTO', 'NOME', 
                                  'ID CAIXA', 'NSU', 'VALOR BRUTO', 'DATA DE FATURAMENTO', 'EMISSAO']
 
-    # Verificar se todas as colunas existem
     for col in colunas_desejadas_sicredi:
         if col not in df_sicredi.columns:
             st.error(f"A coluna '{col}' não foi encontrada na planilha Sicredi.")
@@ -61,14 +110,15 @@ if uploaded_file_sicredi is not None and uploaded_file_sistema is not None:
 
     for col in colunas_desejadas_sistema:
         if col not in df_sistema.columns:
-            st.error(f"A coluna '{col}' não foi encontrada na planilha do Sistema.")
+            st.error(f"A coluna '{col}' não foi encontrada nos dados do Sistema.")
             st.stop()
 
-    # Selecionar apenas as colunas desejadas
     df_sicredi = df_sicredi[colunas_desejadas_sicredi]
     df_sistema = df_sistema[colunas_desejadas_sistema]
 
-    # Definir o mapeamento dos códigos para os nomes
+    #####################################
+    # Mapeamento dos códigos dos estabelecimentos na Sicredi
+    #####################################
     establishment_mapping = {
         "92185778": "Araguaína I",
         "92185790": "Araguaína II",
@@ -86,28 +136,23 @@ if uploaded_file_sicredi is not None and uploaded_file_sistema is not None:
         "92187439": "Colinas"
     }
 
-    # Mapear os códigos na coluna 'Número do estabelecimento'
     df_sicredi['Número do estabelecimento'] = df_sicredi['Número do estabelecimento'].astype(str).str.strip()
     df_sicredi['Número do estabelecimento'] = df_sicredi['Número do estabelecimento'].map(establishment_mapping)
-
-    # Verificar se há códigos não mapeados
+    
     if df_sicredi['Número do estabelecimento'].isnull().any():
         unmapped_codes = df_sicredi[df_sicredi['Número do estabelecimento'].isnull()]['Número do estabelecimento'].unique()
         st.error(f"Existem códigos de estabelecimento sem mapeamento: {', '.join(unmapped_codes)}. Verifique o mapeamento fornecido.")
         st.stop()
 
-    # Função para normalizar os nomes dos estabelecimentos
-    def normalize_name(name):
-        name = name.upper()
-        name = ' '.join(name.split())
-        name = name.replace(' ', '_')
-        return name
-
-    # Aplicar normalização
+    #####################################
+    # Normalização dos nomes dos estabelecimentos
+    #####################################
     df_sicredi['Número do estabelecimento'] = df_sicredi['Número do estabelecimento'].apply(normalize_name)
     df_sistema['EMPRESA'] = df_sistema['EMPRESA'].apply(normalize_name)
 
-    # Converter as colunas de data para datetime
+    #####################################
+    # Conversão das datas
+    #####################################
     try:
         df_sicredi['Data da venda'] = pd.to_datetime(df_sicredi['Data da venda'], dayfirst=True)
     except Exception as e:
@@ -120,11 +165,12 @@ if uploaded_file_sicredi is not None and uploaded_file_sistema is not None:
         st.error(f"Erro ao converter 'DATA DE FATURAMENTO' para datetime: {e}")
         st.stop()
 
-    # Formatar a data para string (dd/mm/yyyy)
     df_sicredi['Data da venda'] = df_sicredi['Data da venda'].dt.strftime('%d/%m/%Y')
     df_sistema['DATA DE FATURAMENTO'] = df_sistema['DATA DE FATURAMENTO'].dt.strftime('%d/%m/%Y')
 
-    # Converter valores para float
+    #####################################
+    # Conversão dos valores para float
+    #####################################
     try:
         df_sicredi['Valor bruto sicredi'] = df_sicredi['Valor bruto'].astype(float)
     except Exception as e:
@@ -132,27 +178,24 @@ if uploaded_file_sicredi is not None and uploaded_file_sistema is not None:
         st.stop()
 
     try:
-        df_sistema['Valor bruto sistema'] = df_sistema['VALOR BRUTO'].astype(float)
+        df_sistema['Valor bruto sistema'] = df_sistema['VALOR BRUTO'].str.replace(',', '.').astype(float)
     except Exception as e:
         st.error(f"Erro ao converter 'VALOR BRUTO' do Sistema para float: {e}")
         st.stop()
 
-    # Remover colunas originais de valor bruto
     df_sicredi.drop(columns=['Valor bruto'], inplace=True)
     df_sistema.drop(columns=['VALOR BRUTO'], inplace=True)
 
-    # Resetar índices
-    df_sistema.reset_index(drop=True, inplace=True)
     df_sicredi.reset_index(drop=True, inplace=True)
+    df_sistema.reset_index(drop=True, inplace=True)
 
-    # Listas para controlar índices utilizados
+    #####################################
+    # Lógica de comparação entre as planilhas
+    #####################################
     indices_utilizados_sicredi = []
     indices_utilizados_sistema = []
-
-    # Lista para armazenar resultados
     resultados = []
 
-    # Loop sobre as linhas da Sicredi
     for i, row_sicredi in df_sicredi.iterrows():
         # Primeira tentativa: data exata
         correspondencia = df_sistema[
@@ -163,7 +206,6 @@ if uploaded_file_sicredi is not None and uploaded_file_sistema is not None:
         ].head(1)
 
         if not correspondencia.empty:
-            # Correspondência na data exata
             resultados.append((row_sicredi, correspondencia.iloc[0], 'Correspondido (Data Exata)'))
             indices_utilizados_sistema.append(correspondencia.index[0])
             indices_utilizados_sicredi.append(i)
@@ -178,40 +220,33 @@ if uploaded_file_sicredi is not None and uploaded_file_sistema is not None:
             ].head(1)
 
             if not correspondencia_d1.empty:
-                # Correspondência em D+1
                 resultados.append((row_sicredi, correspondencia_d1.iloc[0], 'Correspondido (D+1)'))
                 indices_utilizados_sistema.append(correspondencia_d1.index[0])
                 indices_utilizados_sicredi.append(i)
             else:
-                # Nenhuma correspondência
                 resultados.append((row_sicredi, pd.Series(), 'Não Correspondido'))
                 indices_utilizados_sicredi.append(i)
 
-    # Adicionar linhas do Sistema não correspondidas
     for j, row_sistema in df_sistema.iterrows():
         if j not in indices_utilizados_sistema:
             resultados.append((pd.Series(), row_sistema, 'Não Correspondido'))
             indices_utilizados_sistema.append(j)
 
-    # Criar DataFrame final
     final_result = pd.DataFrame([{
         **row_sicredi.to_dict(),
         **row_sistema.to_dict(),
         'Status': status
     } for row_sicredi, row_sistema, status in resultados])
 
-    # Substituir NaN por vazio
     final_result.fillna('', inplace=True)
-
-    # Adicionar coluna 'Diferença'
     final_result['Diferença'] = ''
-
-    # Reorganizar colunas
     cols = [col for col in final_result.columns if col not in ['Diferença', 'Status']] + ['Diferença', 'Status']
     final_result = final_result[cols]
 
-    # Gerar arquivo Excel
-    output = BytesIO()
+    #####################################
+    # Geração do arquivo Excel para download
+    #####################################
+    output = io.BytesIO()
     try:
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
             final_result.to_excel(writer, index=False, sheet_name='Resultado')
@@ -219,20 +254,10 @@ if uploaded_file_sicredi is not None and uploaded_file_sistema is not None:
             worksheet = writer.sheets['Resultado']
 
             max_row = len(final_result) + 1
-            max_col = len(final_result.columns)
-
             col_names = final_result.columns.tolist()
             col_valor_bruto_sicredi = col_names.index('Valor bruto sicredi')
             col_valor_bruto_sistema = col_names.index('Valor bruto sistema')
             col_diferenca = col_names.index('Diferença')
-
-            def col_idx_to_excel_col(idx):
-                idx += 1
-                col_str = ''
-                while idx > 0:
-                    idx, remainder = divmod(idx - 1, 26)
-                    col_str = chr(65 + remainder) + col_str
-                return col_str
 
             col_letter_sicredi = col_idx_to_excel_col(col_valor_bruto_sicredi)
             col_letter_sistema = col_idx_to_excel_col(col_valor_bruto_sistema)
@@ -249,13 +274,10 @@ if uploaded_file_sicredi is not None and uploaded_file_sistema is not None:
         st.stop()
 
     processed_data = output.getvalue()
-
-    # Botão de download
     st.download_button(
         label='Baixar planilha consolidada',
         data=processed_data,
         file_name='Resultado_Comparacao_Sicredi_Sistema_Final.xlsx',
         mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )
-
     st.success("Comparação concluída e arquivo pronto para download.")
