@@ -99,7 +99,7 @@ if uploaded_file_sicredi is not None and "df_sistema" in st.session_state:
     df_sistema.columns = df_sistema.columns.str.strip()
 
     # Seleção das colunas desejadas
-    colunas_desejadas_sicredi = ['Data da venda', 'Produto', 'Bandeira', 'Valor bruto', 'Número do estabelecimento']
+    colunas_desejadas_sicredi = ['Data da venda', 'Produto', 'Canal' 'Bandeira', 'Valor bruto', 'Número do estabelecimento', 'Cód. do pedido']
     colunas_desejadas_sistema = ['ID EMPRESA', 'EMPRESA', 'ID VENDA', 'FORMA DE PAGAMENTO', 'NOME', 
                                  'ID CAIXA', 'NSU', 'VALOR BRUTO', 'DATA DE FATURAMENTO', 'EMISSAO']
 
