@@ -99,7 +99,7 @@ if uploaded_file_sicredi is not None and "df_sistema" in st.session_state:
     df_sistema.columns = df_sistema.columns.str.strip()
 
     # Seleção das colunas desejadas
-    colunas_desejadas_sicredi = ['Data da venda', 'Produto', 'Canal','Bandeira', 'Valor bruto', 'Número do estabelecimento', 'Cód. do pedido']
+    colunas_desejadas_sicredi = ['Data da venda', 'Produto', 'Canal', 'Bandeira', 'Valor bruto', 'Número do estabelecimento', 'Cód. do pedido']
     colunas_desejadas_sistema = ['ID EMPRESA', 'EMPRESA', 'ID VENDA', 'FORMA DE PAGAMENTO', 'NOME', 
                                  'ID CAIXA', 'NSU', 'VALOR BRUTO', 'DATA DE FATURAMENTO', 'EMISSAO']
 
@@ -165,119 +165,4 @@ if uploaded_file_sicredi is not None and "df_sistema" in st.session_state:
         st.error(f"Erro ao converter 'DATA DE FATURAMENTO' para datetime: {e}")
         st.stop()
 
-    df_sicredi['Data da venda'] = df_sicredi['Data da venda'].dt.strftime('%d/%m/%Y')
-    df_sistema['DATA DE FATURAMENTO'] = df_sistema['DATA DE FATURAMENTO'].dt.strftime('%d/%m/%Y')
-
-    #####################################
-    # Conversão dos valores para float
-    #####################################
-    try:
-        df_sicredi['Valor bruto sicredi'] = df_sicredi['Valor bruto'].astype(float)
-    except Exception as e:
-        st.error(f"Erro ao converter 'Valor bruto' da Sicredi para float: {e}")
-        st.stop()
-
-    try:
-        df_sistema['VALOR BRUTO'] = df_sistema['VALOR BRUTO'].str.replace(',', '.').astype(float)
-    except Exception as e:
-        st.error(f"Erro ao converter 'VALOR BRUTO' do Sistema para float: {e}")
-        st.stop()
-
-    df_sicredi.drop(columns=['Valor bruto'], inplace=True)
-    df_sistema.drop(columns=['VALOR BRUTO'], inplace=True)
-
-    df_sicredi.reset_index(drop=True, inplace=True)
-    df_sistema.reset_index(drop=True, inplace=True)
-
-    #####################################
-    # Lógica de comparação entre as planilhas
-    #####################################
-    indices_utilizados_sicredi = []
-    indices_utilizados_sistema = []
-    resultados = []
-
-    for i, row_sicredi in df_sicredi.iterrows():
-        # Primeira tentativa: data exata
-        correspondencia = df_sistema[
-            (df_sistema['EMPRESA'] == row_sicredi['Número do estabelecimento']) &
-            (df_sistema['DATA DE FATURAMENTO'] == row_sicredi['Data da venda']) &
-            (df_sistema['VALOR BRUTO'] == row_sicredi['Valor bruto sicredi']) &
-            (~df_sistema.index.isin(indices_utilizados_sistema))
-        ].head(1)
-
-        if not correspondencia.empty:
-            resultados.append((row_sicredi, correspondencia.iloc[0], 'Correspondido (Data Exata)'))
-            indices_utilizados_sistema.append(correspondencia.index[0])
-            indices_utilizados_sicredi.append(i)
-        else:
-            # Segunda tentativa: D+1
-            data_d1 = (pd.to_datetime(row_sicredi['Data da venda'], format='%d/%m/%Y') + timedelta(days=1)).strftime('%d/%m/%Y')
-            correspondencia_d1 = df_sistema[
-                (df_sistema['EMPRESA'] == row_sicredi['Número do estabelecimento']) &
-                (df_sistema['DATA DE FATURAMENTO'] == data_d1) &
-                (df_sistema['VALOR BRUTO'] == row_sicredi['Valor bruto sicredi']) &
-                (~df_sistema.index.isin(indices_utilizados_sistema))
-            ].head(1)
-
-            if not correspondencia_d1.empty:
-                resultados.append((row_sicredi, correspondencia_d1.iloc[0], 'Correspondido (D+1)'))
-                indices_utilizados_sistema.append(correspondencia_d1.index[0])
-                indices_utilizados_sicredi.append(i)
-            else:
-                resultados.append((row_sicredi, pd.Series(), 'Não Correspondido'))
-                indices_utilizados_sicredi.append(i)
-
-    for j, row_sistema in df_sistema.iterrows():
-        if j not in indices_utilizados_sistema:
-            resultados.append((pd.Series(), row_sistema, 'Não Correspondido'))
-            indices_utilizados_sistema.append(j)
-
-    final_result = pd.DataFrame([{
-        **row_sicredi.to_dict(),
-        **row_sistema.to_dict(),
-        'Status': status
-    } for row_sicredi, row_sistema, status in resultados])
-
-    final_result.fillna('', inplace=True)
-    final_result['Diferença'] = ''
-    cols = [col for col in final_result.columns if col not in ['Diferença', 'Status']] + ['Diferença', 'Status']
-    final_result = final_result[cols]
-
-    #####################################
-    # Geração do arquivo Excel para download
-    #####################################
-    output = io.BytesIO()
-    try:
-        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-            final_result.to_excel(writer, index=False, sheet_name='Resultado')
-            workbook = writer.book
-            worksheet = writer.sheets['Resultado']
-
-            max_row = len(final_result) + 1
-            col_names = final_result.columns.tolist()
-            col_valor_bruto_sicredi = col_names.index('Valor bruto sicredi')
-            col_valor_bruto_sistema = col_names.index('VALOR BRUTO')
-            col_diferenca = col_names.index('Diferença')
-
-            col_letter_sicredi = col_idx_to_excel_col(col_valor_bruto_sicredi)
-            col_letter_sistema = col_idx_to_excel_col(col_valor_bruto_sistema)
-            col_letter_diferenca = col_idx_to_excel_col(col_diferenca)
-
-            for row_num in range(2, max_row + 1):
-                formula = f"={col_letter_sicredi}{row_num}-{col_letter_sistema}{row_num}"
-                worksheet.write_formula(f"{col_letter_diferenca}{row_num}", formula)
-
-            number_format = workbook.add_format({'num_format': '#,##0.00'})
-            worksheet.set_column(col_diferenca, col_diferenca, 15, number_format)
-    except Exception as e:
-        st.error(f"Erro ao gerar o arquivo Excel consolidado: {e}")
-        st.stop()
-
-    processed_data = output.getvalue()
-    st.download_button(
-        label='Baixar planilha consolidada',
-        data=processed_data,
-        file_name='Resultado_Comparacao_Sicredi_Sistema_Final.xlsx',
-        mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    )
-    st.success("Comparação concluída e arquivo pronto para download.")
+    df_sicredi['Data da venda'] = df_sicredi['Data da venda'].
