@@ -256,7 +256,7 @@ if uploaded_file_sicredi is not None and "df_sistema" in st.session_state:
             max_row = len(final_result) + 1
             col_names = final_result.columns.tolist()
             col_valor_bruto_sicredi = col_names.index('Valor bruto sicredi')
-            col_valor_bruto_sistema = col_names.index('Valor bruto sistema')
+            col_valor_bruto_sistema = col_names.index('VALOR BRUTO')
             col_diferenca = col_names.index('Diferença')
 
             col_letter_sicredi = col_idx_to_excel_col(col_valor_bruto_sicredi)
