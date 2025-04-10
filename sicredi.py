@@ -178,7 +178,7 @@ if uploaded_file_sicredi is not None and "df_sistema" in st.session_state:
         st.stop()
 
     try:
-        df_sistema['Valor bruto sistema'] = df_sistema['VALOR BRUTO'].str.replace(',', '.').astype(float)
+        df_sistema['VALOR BRUTO'] = df_sistema['VALOR BRUTO'].str.replace(',', '.').astype(float)
     except Exception as e:
         st.error(f"Erro ao converter 'VALOR BRUTO' do Sistema para float: {e}")
         st.stop()
