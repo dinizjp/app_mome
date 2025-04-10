@@ -201,7 +201,7 @@ if uploaded_file_sicredi is not None and "df_sistema" in st.session_state:
         correspondencia = df_sistema[
             (df_sistema['EMPRESA'] == row_sicredi['Número do estabelecimento']) &
             (df_sistema['DATA DE FATURAMENTO'] == row_sicredi['Data da venda']) &
-            (df_sistema['Valor bruto sistema'] == row_sicredi['Valor bruto sicredi']) &
+            (df_sistema['VALOR BRUTO'] == row_sicredi['Valor bruto sicredi']) &
             (~df_sistema.index.isin(indices_utilizados_sistema))
         ].head(1)
 
@@ -215,7 +215,7 @@ if uploaded_file_sicredi is not None and "df_sistema" in st.session_state:
             correspondencia_d1 = df_sistema[
                 (df_sistema['EMPRESA'] == row_sicredi['Número do estabelecimento']) &
                 (df_sistema['DATA DE FATURAMENTO'] == data_d1) &
-                (df_sistema['Valor bruto sistema'] == row_sicredi['Valor bruto sicredi']) &
+                (df_sistema['VALOR BRUTO'] == row_sicredi['Valor bruto sicredi']) &
                 (~df_sistema.index.isin(indices_utilizados_sistema))
             ].head(1)
 
