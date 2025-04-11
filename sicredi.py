@@ -86,7 +86,6 @@ if uploaded_file_sicredi is not None and "df_sistema" in st.session_state:
     try:
         df_sicredi = pd.read_excel(uploaded_file_sicredi, skiprows=16, names=colunas_sicredi, header=None)
         st.success("Planilha Sicredi carregada com sucesso!")
-        #st.write("Colunas lidas da planilha Sicredi:", df_sicredi.columns.tolist())
     except Exception as e:
         st.error(f"Erro ao ler o arquivo Sicredi: {e}")
         st.stop()
@@ -141,7 +140,7 @@ if uploaded_file_sicredi is not None and "df_sistema" in st.session_state:
     
     if df_sicredi['Número do estabelecimento'].isnull().any():
         unmapped_codes = df_sicredi[df_sicredi['Número do estabelecimento'].isnull()]['Número do estabelecimento'].unique()
-        st.error(f"Existem códigos de estabelecimento sem mapeamento: {', '.join(unmapped_codes)}. Verifique o mapeamento fornecido.")
+        st.error(f"Existem códigos de estabelecimento sem mapeamento: {', '.join(map(str, unmapped_codes))}. Verifique o mapeamento fornecido.")
         st.stop()
 
     #####################################
@@ -234,9 +233,12 @@ if uploaded_file_sicredi is not None and "df_sistema" in st.session_state:
             resultados.append((pd.Series(), row_sistema, 'Não Correspondido'))
             indices_utilizados_sistema.append(j)
 
+    # Para garantir que mesmo as linhas sem correspondência do Sistema contenham todas as chaves,
+    # criamos um dicionário padrão com todas as colunas do df_sistema.
+    default_sistema = {col: "" for col in df_sistema.columns}
     final_result = pd.DataFrame([{
         **row_sicredi.to_dict(),
-        **row_sistema.to_dict(),
+        **(row_sistema.to_dict() if not row_sistema.empty else default_sistema),
         'Status': status
     } for row_sicredi, row_sistema, status in resultados])
 
