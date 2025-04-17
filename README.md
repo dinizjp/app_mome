@@ -2,7 +2,11 @@
 
 ## Objetivo do Projeto
 
-O projeto "app_mome" tem como finalidade realizar a comparação de dados de vendas entre um sistema interno e um arquivo de relatórios fornecido pelo Sicredi. Ele permite que os usuários analisem e reconciliem informações financeiras de maneira eficiente, destacando correspondências e divergências entre as duas fontes de dados. Através de uma interface interativa, os usuários podem carregar o arquivo do Sicredi, selecionar filtros para busca de dados no sistema e gerar um relatório detalhado em Excel.
+O projeto "app_mome" tem como finalidade realizar a comparação de dados de vendas entre um sistema interno e um arquivo de relatórios fornecido pelo Sicredi. 
+
+Ele permite que os usuários analisem e reconciliem informações financeiras de maneira eficiente, destacando correspondências e divergências entre as duas fontes de dados.
+
+Através de uma interface interativa, os usuários podem carregar o arquivo do Sicredi, selecionar filtros para busca de dados no sistema e gerar um relatório detalhado em Excel.
 
 ## Dependências e Como Instalá-las
 
